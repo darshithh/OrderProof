@@ -4,6 +4,7 @@ from datetime import datetime
 
 class OrderBase(BaseModel):
     id: str
+    customer_id: str
     customer_name: str
     restaurant_name: str
     delivered_at: datetime
@@ -17,6 +18,7 @@ class OrderResponse(OrderBase):
 class ComplaintResponse(BaseModel):
     id: int
     order_id: str
+    customer_id: str
     customer_name: str
     restaurant_name: str
     complaint_text: str

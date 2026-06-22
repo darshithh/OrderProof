@@ -14,9 +14,9 @@ def get_complaint_by_hash(db: Session, image_hash: str):
     """Find if an image with this SHA-256 hash has been uploaded before."""
     return db.query(models.Complaint).filter(models.Complaint.image_hash == image_hash).first()
 
-def get_customer_complaint_count(db: Session, customer_name: str):
+def get_customer_complaint_count(db: Session, customer_id: str):
     """Count how many previous complaints a customer has filed."""
-    return db.query(models.Complaint).filter(models.Complaint.customer_name.ilike(customer_name)).count()
+    return db.query(models.Complaint).filter(models.Complaint.customer_id == customer_id).count()
 
 def get_restaurant_similar_complaints_count(db: Session, restaurant_name: str, keyword: str):
     """
@@ -30,12 +30,13 @@ def get_restaurant_similar_complaints_count(db: Session, restaurant_name: str, k
         models.Complaint.complaint_text.ilike(query_pattern)
     ).count()
 
-def create_complaint(db: Session, order_id: str, customer_name: str, restaurant_name: str, 
+def create_complaint(db: Session, order_id: str, customer_id: str, customer_name: str, restaurant_name: str, 
                      complaint_text: str, image_path: str, image_hash: str, 
                      risk_score: int, decision: str, analysis_details: dict):
     """Create a new complaint record."""
     db_complaint = models.Complaint(
         order_id=order_id,
+        customer_id=customer_id,
         customer_name=customer_name,
         restaurant_name=restaurant_name,
         complaint_text=complaint_text,
@@ -79,6 +80,7 @@ def seed_db(db: Session):
     # 1. Fresh delivery (15 mins ago)
     order1 = models.Order(
         id="ORD-1001",
+        customer_id="CUST-1001",
         customer_name="Alice Smith",
         restaurant_name="Burger House",
         delivered_at=now - datetime.timedelta(minutes=15)
@@ -86,6 +88,7 @@ def seed_db(db: Session):
     # 2. Delayed delivery (3 days ago)
     order2 = models.Order(
         id="ORD-1002",
+        customer_id="CUST-1002",
         customer_name="Bob Jones",
         restaurant_name="Sushi Central",
         delivered_at=now - datetime.timedelta(days=3)
@@ -93,6 +96,7 @@ def seed_db(db: Session):
     # 3. Clean standard delivery (2 hours ago)
     order3 = models.Order(
         id="ORD-1003",
+        customer_id="CUST-1003",
         customer_name="Charlie Brown",
         restaurant_name="Pizza Palace",
         delivered_at=now - datetime.timedelta(hours=2)
@@ -100,20 +104,30 @@ def seed_db(db: Session):
     # 4. Another order for Alice (5 hours ago)
     order4 = models.Order(
         id="ORD-1004",
+        customer_id="CUST-1001",
         customer_name="Alice Smith",
         restaurant_name="Pizza Palace",
         delivered_at=now - datetime.timedelta(hours=5)
     )
+    # 5. Distinct Alice Smith order (6 hours ago)
+    order5 = models.Order(
+        id="ORD-1005",
+        customer_id="CUST-1006",
+        customer_name="Alice Smith",
+        restaurant_name="Sushi Central",
+        delivered_at=now - datetime.timedelta(hours=6)
+    )
 
-    db.add_all([order1, order2, order3, order4])
+    db.add_all([order1, order2, order3, order4, order5])
     db.commit()
 
     # Pre-seed some complaints to test historical rules
     # We will use mock details and dummy image hashes
     
-    # Pre-seed 2 complaints for "Alice Smith" so her next one triggers "Many claims" (> 2 previous)
+    # Pre-seed 2 complaints for "Alice Smith" (CUST-1001) so her next one triggers "Many claims" (> 2 previous)
     c1 = models.Complaint(
         order_id="ORD-0990",
+        customer_id="CUST-1001",
         customer_name="Alice Smith",
         restaurant_name="Taco Bell",
         complaint_text="Found a hair in my taco. This is unacceptable.",
@@ -134,6 +148,7 @@ def seed_db(db: Session):
 
     c2 = models.Complaint(
         order_id="ORD-0995",
+        customer_id="CUST-1001",
         customer_name="Alice Smith",
         restaurant_name="Burger House",
         complaint_text="There was a piece of plastic wrapper in the bun.",
@@ -157,6 +172,7 @@ def seed_db(db: Session):
     # This will trigger the "Restaurant has similar complaints" mitigating factor (reduces risk for customer)
     c3 = models.Complaint(
         order_id="ORD-0901",
+        customer_id="CUST-1004",
         customer_name="Donald Duck",
         restaurant_name="Burger House",
         complaint_text="Disgusting! Found a black hair inside my chicken burger.",
@@ -176,6 +192,7 @@ def seed_db(db: Session):
 
     c4 = models.Complaint(
         order_id="ORD-0902",
+        customer_id="CUST-1005",
         customer_name="Mickey Mouse",
         restaurant_name="Burger House",
         complaint_text="Found long strands of hair stuck to the cheese slice.",

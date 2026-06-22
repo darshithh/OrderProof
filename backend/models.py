@@ -10,6 +10,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(String, primary_key=True, index=True)
+    customer_id = Column(String, nullable=False, index=True)
     customer_name = Column(String, nullable=False, index=True)
     restaurant_name = Column(String, nullable=False, index=True)
     delivered_at = Column(DateTime, nullable=False)
@@ -23,6 +24,7 @@ class Complaint(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     order_id = Column(String, nullable=False, index=True)
+    customer_id = Column(String, nullable=False, index=True)
     customer_name = Column(String, nullable=False, index=True)
     restaurant_name = Column(String, nullable=False, index=True)
     complaint_text = Column(String, nullable=False)

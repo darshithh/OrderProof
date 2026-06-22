@@ -1,6 +1,7 @@
 import io
 import hashlib
 import datetime
+# pyrefly: ignore [missing-import]
 from PIL import Image
 from sqlalchemy.orm import Session
 from backend import crud
@@ -21,7 +22,8 @@ def analyze_complaint(
     customer_name: str,
     restaurant_name: str,
     complaint_text: str,
-    order_id: str
+    order_id: str,
+    customer_id: str
 ) -> dict:
     """
     Main analysis engine. Combines multiple rules to calculate a risk score (0-100).
@@ -33,7 +35,7 @@ def analyze_complaint(
     - image_metadata: Dict (width, height, format, has_exif)
     """
     rules_triggered = []
-    total_score = 10  # Starting baseline risk score (low risk)
+    total_score = 0  # Starting baseline risk score (low risk)
     
     # ----------------------------------------------------
     # Rule 1: AI Tool Name in Filename Check (+25 points)
@@ -149,23 +151,23 @@ def analyze_complaint(
     order = crud.get_order(db, order_id)
     if order:
         elapsed_time = datetime.datetime.utcnow() - order.delivered_at
-        hours_elapsed = elapsed_time.total_seconds() / 3600.0
+        minutes_elapsed= elapsed_time.total_seconds() / 60.0
         
-        if hours_elapsed > 24:
+        if minutes_elapsed > 30:
             score_added = 20
             total_score += score_added
             rules_triggered.append({
                 "rule": "Complaint Timing Check",
                 "passed": False,
                 "score_added": score_added,
-                "message": f"Complaint uploaded too late: {hours_elapsed:.1f} hours after order delivery (24-hour limit)."
+                "message": f"Complaint uploaded too late: {minutes_elapsed:.1f} minutes after order delivery (30-minute limit)."
             })
         else:
             rules_triggered.append({
                 "rule": "Complaint Timing Check",
                 "passed": True,
                 "score_added": 0,
-                "message": f"Complaint submitted within safety window: {hours_elapsed:.1f} hours after delivery."
+                "message": f"Complaint submitted within safety window: {minutes_elapsed:.1f} minutes after delivery."
             })
     else:
         # Order ID not found
@@ -181,7 +183,7 @@ def analyze_complaint(
     # ----------------------------------------------------
     # Rule 6: Customer Complaint History Check (+20 points)
     # ----------------------------------------------------
-    prev_claims_count = crud.get_customer_complaint_count(db, customer_name)
+    prev_claims_count = crud.get_customer_complaint_count(db, customer_id)
     # If the user has 2 or more previous claims, this submission makes it 3+
     if prev_claims_count >= 2:
         score_added = 20

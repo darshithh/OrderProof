@@ -202,6 +202,7 @@ function initSandboxSelect() {
     const matchingOrder = ordersList.find(o => o.id === selectedId);
     if (matchingOrder) {
       document.getElementById("input-customer-name").value = matchingOrder.customer_name;
+      document.getElementById("input-customer-id").value = matchingOrder.customer_id;
       document.getElementById("input-order-id").value = matchingOrder.id;
       document.getElementById("input-restaurant-name").value = matchingOrder.restaurant_name;
     }
@@ -310,6 +311,7 @@ function initFormSubmit() {
     // Prepare FormData payload
     const formData = new FormData();
     formData.append("order_id", document.getElementById("input-order-id").value.trim());
+    formData.append("customer_id", document.getElementById("input-customer-id").value.trim());
     formData.append("customer_name", document.getElementById("input-customer-name").value.trim());
     formData.append("restaurant_name", document.getElementById("input-restaurant-name").value.trim());
     formData.append("complaint_text", document.getElementById("input-complaint-text").value.trim());
@@ -356,7 +358,7 @@ function initFormSubmit() {
 function renderAnalysisResult(complaint) {
   // 1. Text Info fields
   document.getElementById("result-meta-order-id").textContent = complaint.order_id;
-  document.getElementById("result-meta-customer").textContent = complaint.customer_name;
+  document.getElementById("result-meta-customer").textContent = `${complaint.customer_name} (${complaint.customer_id})`;
   document.getElementById("result-meta-restaurant").textContent = complaint.restaurant_name;
 
   // 2. Score Gauge
@@ -488,6 +490,7 @@ function applyAdminFilters() {
     // 1. Text Search query
     const matchesSearch = (
       c.customer_name.toLowerCase().includes(query) ||
+      c.customer_id.toLowerCase().includes(query) ||
       c.restaurant_name.toLowerCase().includes(query) ||
       c.order_id.toLowerCase().includes(query) ||
       c.complaint_text.toLowerCase().includes(query)
@@ -537,7 +540,7 @@ function applyAdminFilters() {
       </td>
       <td>
         <div class="admin-customer-info">
-          <span class="admin-customer-name">${c.customer_name}</span>
+          <span class="admin-customer-name">${c.customer_name} (${c.customer_id})</span>
           <span class="admin-restaurant-name">${c.restaurant_name}</span>
         </div>
       </td>
@@ -646,7 +649,7 @@ function openDetailsModal(complaintId) {
       <div style="display: flex; flex-direction: column; gap: 1rem;">
         <div class="modal-text-block">
           <h4>Customer Details</h4>
-          <p><strong>Name:</strong> ${c.customer_name}</p>
+          <p><strong>Name:</strong> ${c.customer_name} (${c.customer_id})</p>
           <p><strong>Order ID:</strong> ${c.order_id}</p>
           <p><strong>Restaurant:</strong> ${c.restaurant_name}</p>
         </div>

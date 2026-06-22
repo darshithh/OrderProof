@@ -55,6 +55,7 @@ def read_orders(db: Session = Depends(get_db)):
 @app.post("/api/complaints", response_model=schemas.ComplaintResponse)
 async def submit_complaint(
     order_id: str = Form(...),
+    customer_id: str = Form(...),
     customer_name: str = Form(...),
     restaurant_name: str = Form(...),
     complaint_text: str = Form(...),
@@ -71,6 +72,11 @@ async def submit_complaint(
     except Exception:
         raise HTTPException(status_code=400, detail="Could not read uploaded image file.")
 
+    # Validate customer_id matches order customer_id if order exists
+    order = crud.get_order(db, order_id)
+    if order and order.customer_id != customer_id:
+        raise HTTPException(status_code=400, detail="Customer ID does not match the order records.")
+
     # 2. Analyze complaint using the risk analysis engine
     analysis = analyzer.analyze_complaint(
         db=db,
@@ -79,7 +85,8 @@ async def submit_complaint(
         customer_name=customer_name,
         restaurant_name=restaurant_name,
         complaint_text=complaint_text,
-        order_id=order_id
+        order_id=order_id,
+        customer_id=customer_id
     )
 
     # 3. Save the image file to the uploads/ directory
@@ -98,6 +105,7 @@ async def submit_complaint(
     new_complaint = crud.create_complaint(
         db=db,
         order_id=order_id,
+        customer_id=customer_id,
         customer_name=customer_name,
         restaurant_name=restaurant_name,
         complaint_text=complaint_text,
