@@ -1884,3 +1884,51 @@ body::after {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Premium Button Loading State & Spinner --- */
+.btn-primary.btn-loading {
+  position: relative;
+  background: linear-gradient(90deg, #2563eb 25%, #3b82f6 50%, #2563eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  opacity: 0.95;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: #2563eb;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.btn-loading .spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

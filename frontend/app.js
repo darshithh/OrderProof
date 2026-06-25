@@ -327,9 +327,39 @@ function initFormSubmit() {
 
     // Set Loading State
     btnSubmit.disabled = true;
+    btnSubmit.classList.add("btn-loading");
     const originalText = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<i data-lucide="loader-2" class="spin-icon"></i> <span>Analyzing Risk...</span>';
-    lucide.createIcons();
+
+    // Staged loading messages array
+    const loadingMessages = [
+      "Uploading evidence...",
+      "Checking image metadata...",
+      "Scanning for duplicate evidence...",
+      "Analyzing complaint history...",
+      "Calculating risk score..."
+    ];
+
+    // Initialize with the first message and a spinner
+    btnSubmit.innerHTML = `
+      <div class="spinner"></div>
+      <span id="loading-text-span">${loadingMessages[0]}</span>
+    `;
+
+    // Rotate messages every 650ms
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % loadingMessages.length;
+      const textSpan = document.getElementById("loading-text-span");
+      if (textSpan) {
+        textSpan.textContent = loadingMessages[messageIndex];
+      }
+    }, 650);
+
+    // Prepare AbortController for a 25-second timeout fallback
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 25000);
 
     // Prepare FormData payload
     const formData = new FormData();
@@ -343,8 +373,12 @@ function initFormSubmit() {
     try {
       const res = await fetch(`${API_BASE}/api/complaints`, {
         method: "POST",
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
+
+      // Clear timeout immediately upon response
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const err = await res.json();
@@ -367,12 +401,18 @@ function initFormSubmit() {
 
     } catch (error) {
       console.error(error);
-      alert(`Error submitting complaint: ${error.message}`);
+      if (error.name === "AbortError") {
+        alert("Analysis failed. Request timed out. Please try again.");
+      } else {
+        alert(`Analysis failed. Please try again. (${error.message || "Server error"})`);
+      }
     } finally {
-      // Revert button status
+      // Clear timers and restore button status
+      clearTimeout(timeoutId);
+      clearInterval(messageInterval);
       btnSubmit.disabled = false;
+      btnSubmit.classList.remove("btn-loading");
       btnSubmit.innerHTML = originalText;
-      lucide.createIcons();
     }
   });
 }
