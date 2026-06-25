@@ -115,7 +115,8 @@ async def submit_complaint(
         decision=analysis["decision"],
         analysis_details={
             "rules": analysis["rules_triggered"],
-            "metadata": analysis["image_metadata"]
+            "metadata": analysis["image_metadata"],
+            "duplicate_detection": analysis.get("duplicate_detection")
         }
     )
 

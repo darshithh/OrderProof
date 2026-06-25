@@ -25,6 +25,18 @@ document.addEventListener("DOMContentLoaded", () => {
   initAdminFilters();
   initModalClose();
 
+  // Bind Hero see logic button scroll
+  const seeLogicBtn = document.getElementById("btn-see-logic");
+  if (seeLogicBtn) {
+    seeLogicBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const element = document.getElementById("scoring-logic-card");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
   // Load default dashboard statistics
   fetchDashboardStats();
 
@@ -136,6 +148,17 @@ function appRouter(target) {
     loadOrdersForSelect();
   } else if (target === "admin") {
     fetchComplaintsForAdmin();
+  } else if (target === "result") {
+    const emptyState = document.getElementById("result-empty-state");
+    const gridContent = document.getElementById("result-grid-content");
+    if (!latestResult) {
+      if (emptyState) emptyState.style.display = "flex";
+      if (gridContent) gridContent.style.display = "none";
+    } else {
+      if (emptyState) emptyState.style.display = "none";
+      if (gridContent) gridContent.style.display = "grid";
+      renderAnalysisResult(latestResult);
+    }
   }
 
   // Render Lucide Icons to cover dynamically updated pages
@@ -356,6 +379,12 @@ function initFormSubmit() {
 
 // --- Render Analysis Results (circular gauge & details table) ---
 function renderAnalysisResult(complaint) {
+  // Toggle visibility of empty state and content
+  const emptyState = document.getElementById("result-empty-state");
+  const gridContent = document.getElementById("result-grid-content");
+  if (emptyState) emptyState.style.display = "none";
+  if (gridContent) gridContent.style.display = "grid";
+
   // 1. Text Info fields
   document.getElementById("result-meta-order-id").textContent = complaint.order_id;
   document.getElementById("result-meta-customer").textContent = `${complaint.customer_name} (${complaint.customer_id})`;
@@ -376,7 +405,12 @@ function renderAnalysisResult(complaint) {
   const decisionText = document.getElementById("result-decision-text");
   const decisionBox = document.getElementById("result-decision-container");
 
-  decisionBadge.textContent = complaint.decision;
+  // Clean decision label for the badge
+  let decisionLabel = complaint.decision;
+  if (decisionLabel === "Manual Review Needed") {
+    decisionLabel = "Manual Review";
+  }
+  decisionBadge.textContent = decisionLabel;
 
   if (score <= 30) {
     root.style.setProperty("--accent-color", "var(--success)");
@@ -443,7 +477,35 @@ function renderAnalysisResult(complaint) {
   document.getElementById("diag-dimensions").textContent = meta.width ? `${meta.width} x ${meta.height}` : "Unknown";
   document.getElementById("diag-format").textContent = meta.format || "Unknown";
   document.getElementById("diag-exif").textContent = meta.has_exif ? "EXIF Present" : "Missing EXIF";
-  document.getElementById("diag-hash").textContent = complaint.image_hash;
+
+  // Show SHA-256 and dHash
+  const dup = complaint.analysis_details.duplicate_detection || {};
+  document.getElementById("diag-dhash").textContent = dup.dhash || "None";
+  document.getElementById("diag-sha256").textContent = dup.sha256 || complaint.image_hash || "None";
+
+  // Update Duplicate Badges
+  const exactStatusEl = document.getElementById("diag-exact-match-status");
+  const visualStatusEl = document.getElementById("diag-visual-match-status");
+
+  if (dup.exact_match) {
+    exactStatusEl.className = "diag-status-badge status-match";
+    exactStatusEl.innerHTML = `<i data-lucide="alert-triangle"></i> <span>Exact Hash Match: Complaint #${dup.exact_match_id}</span>`;
+  } else {
+    exactStatusEl.className = "diag-status-badge status-unique";
+    exactStatusEl.innerHTML = `<i data-lucide="check-circle-2"></i> <span>Exact Hash Match: None</span>`;
+  }
+
+  if (dup.visual_match && !dup.exact_match) {
+    visualStatusEl.className = "diag-status-badge status-match";
+    visualStatusEl.innerHTML = `<i data-lucide="alert-triangle"></i> <span>Visual Similarity: Match (Complaint #${dup.visual_match_id}, Dist: ${dup.hamming_distance}/64)</span>`;
+  } else if (dup.exact_match) {
+    visualStatusEl.className = "diag-status-badge status-match";
+    visualStatusEl.innerHTML = `<i data-lucide="alert-triangle"></i> <span>Visual Similarity: Exact Match</span>`;
+  } else {
+    visualStatusEl.className = "diag-status-badge status-unique";
+    visualStatusEl.innerHTML = `<i data-lucide="check-circle-2"></i> <span>Visual Similarity: None</span>`;
+  }
+
   document.getElementById("result-evidence-img").src = `${API_BASE}/${complaint.image_path}`;
 
   // Trigger Lucide updates
@@ -522,10 +584,15 @@ function applyAdminFilters() {
     if (c.risk_score > 30 && c.risk_score <= 70) scoreColorClass = "text-warning";
     else if (c.risk_score > 70) scoreColorClass = "text-danger";
 
-    // Decision badge label
+    // Decision badge label & cleaned text
     let decisionBadgeClass = "tag-success";
-    if (c.decision === "Manual Review Needed") decisionBadgeClass = "tag-warning";
-    else if (c.decision === "Suspicious") decisionBadgeClass = "tag-danger";
+    let decisionText = c.decision;
+    if (c.decision === "Manual Review Needed") {
+      decisionBadgeClass = "tag-warning";
+      decisionText = "Manual Review";
+    } else if (c.decision === "Suspicious") {
+      decisionBadgeClass = "tag-danger";
+    }
 
     // Status label
     let statusClass = "badge-status-pending";
@@ -549,7 +616,7 @@ function applyAdminFilters() {
         <img src="${API_BASE}/${c.image_path}" class="table-image-thumbnail" alt="Complaint proof" onclick="openDetailsModal(${c.id})">
       </td>
       <td>
-        <span class="tag ${decisionBadgeClass}">${c.decision}</span>
+        <span class="tag ${decisionBadgeClass}">${decisionText}</span>
       </td>
       <td>
         <span class="badge-status ${statusClass}">${c.status}</span>
@@ -564,6 +631,9 @@ function applyAdminFilters() {
           </button>
           <button class="btn-icon-only btn-reject" title="Reject Refund" onclick="updateComplaintStatus(${c.id}, 'Rejected')" ${c.status === 'Rejected' ? 'disabled' : ''}>
             <i data-lucide="x"></i>
+          </button>
+          <button class="btn-icon-only btn-review" title="Send to Manual Review" onclick="updateComplaintStatus(${c.id}, 'Pending')" ${c.status === 'Pending' ? 'disabled' : ''}>
+            <i data-lucide="rotate-ccw"></i>
           </button>
         </div>
       </td>
@@ -612,10 +682,15 @@ function openDetailsModal(complaintId) {
   const modal = document.getElementById("admin-detail-modal");
   const contentArea = document.getElementById("modal-content-area");
 
-  // Format decision class
+  // Format decision class & cleaned text
   let decisionBadgeClass = "tag-success";
-  if (c.decision === "Manual Review Needed") decisionBadgeClass = "tag-warning";
-  else if (c.decision === "Suspicious") decisionBadgeClass = "tag-danger";
+  let decisionText = c.decision;
+  if (c.decision === "Manual Review Needed") {
+    decisionBadgeClass = "tag-warning";
+    decisionText = "Manual Review";
+  } else if (c.decision === "Suspicious") {
+    decisionBadgeClass = "tag-danger";
+  }
 
   // Build list of rules triggered
   const rules = c.analysis_details.rules || [];
@@ -642,6 +717,11 @@ function openDetailsModal(complaintId) {
   });
 
   const meta = c.analysis_details.metadata || {};
+  
+  // Show hashes
+  const dup = c.analysis_details.duplicate_detection || {};
+  const displayDhash = dup.dhash || "None";
+  const displaySha256 = dup.sha256 || c.image_hash || "None";
 
   contentArea.innerHTML = `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
@@ -662,7 +742,8 @@ function openDetailsModal(complaintId) {
           <p><strong>Dimensions:</strong> ${meta.width ? `${meta.width} x ${meta.height}` : "Unknown"}</p>
           <p><strong>File Format:</strong> ${meta.format || "Unknown"}</p>
           <p><strong>EXIF Check:</strong> ${meta.has_exif ? "EXIF Present" : "Missing EXIF"}</p>
-          <p style="word-break: break-all;"><strong>SHA-256 Hash:</strong> <code class="hash-text">${c.image_hash}</code></p>
+          <p style="word-break: break-all; margin-bottom: 0.35rem;"><strong>SHA-256 Hash:</strong> <code class="hash-text">${displaySha256}</code></p>
+          <p style="word-break: break-all;"><strong>dHash:</strong> <code class="hash-text">${displayDhash}</code></p>
         </div>
       </div>
 
@@ -675,21 +756,34 @@ function openDetailsModal(complaintId) {
           </div>
           <div>
             <h4>System Decision</h4>
-            <span class="tag ${decisionBadgeClass}" style="font-size:0.85rem; padding: 0.25rem 0.6rem;">${c.decision}</span>
+            <span class="tag ${decisionBadgeClass}" style="font-size:0.85rem; padding: 0.25rem 0.6rem;">${decisionText}</span>
           </div>
         </div>
         
         <div class="modal-text-block" style="padding: 0;">
           <h4 style="padding: 0.75rem 1rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">Fraud Signals Analysis</h4>
-          <div style="max-height: 200px; overflow-y: auto; padding: 0 1rem 1rem;">
+          <div style="max-height: 150px; overflow-y: auto; padding: 0 1rem 1rem;">
             ${rulesHTML}
           </div>
         </div>
 
-        <div class="img-frame" style="max-height: 180px;">
-          <img src="${API_BASE}/${c.image_path}" alt="Complaint evidence proof" style="max-height: 180px;">
+        <div class="img-frame" style="max-height: 150px;">
+          <img src="${API_BASE}/${c.image_path}" alt="Complaint evidence proof" style="max-height: 150px;">
         </div>
       </div>
+    </div>
+
+    <!-- Quick action buttons directly inside the modal -->
+    <div class="modal-actions-bar" style="display:flex; gap: 0.75rem; justify-content: flex-end; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 1.5rem; flex-wrap: wrap;">
+      <button class="btn btn-secondary" style="color: var(--success); border-color: var(--success-border); background: var(--success-bg);" onclick="updateComplaintStatus(${c.id}, 'Approved'); document.getElementById('admin-detail-modal').style.display = 'none';" ${c.status === 'Approved' ? 'disabled' : ''}>
+        <i data-lucide="check"></i> Approve Refund
+      </button>
+      <button class="btn btn-secondary" style="color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg);" onclick="updateComplaintStatus(${c.id}, 'Rejected'); document.getElementById('admin-detail-modal').style.display = 'none';" ${c.status === 'Rejected' ? 'disabled' : ''}>
+        <i data-lucide="x"></i> Reject Claim
+      </button>
+      <button class="btn btn-secondary" style="color: var(--warning); border-color: var(--warning-border); background: var(--warning-bg);" onclick="updateComplaintStatus(${c.id}, 'Pending'); document.getElementById('admin-detail-modal').style.display = 'none';" ${c.status === 'Pending' ? 'disabled' : ''}>
+        <i data-lucide="rotate-ccw"></i> Send to Manual Review
+      </button>
     </div>
   `;
 
@@ -712,3 +806,81 @@ function initModalClose() {
     }
   });
 }
+
+// --- Interactive Demo Auto-fill Helper ---
+async function fillDemoClaim(type) {
+  let customerName, customerId, orderId, restaurantName, complaintText, imageName;
+  
+  if (type === 'genuine') {
+    customerName = 'Alice Smith';
+    customerId = 'CUST-1001';
+    orderId = 'ORD-1001';
+    restaurantName = 'Burger House';
+    complaintText = 'Found a long black hair baked into my burger bun. This is completely unhygienic and disgusting!';
+    imageName = 'burger_hair.png';
+  } else if (type === 'late') {
+    customerName = 'Bob Jones';
+    customerId = 'CUST-1002';
+    orderId = 'ORD-1002'; // Delivered 3 days ago (>30 mins)
+    restaurantName = 'Sushi Central';
+    complaintText = 'I am filing a complaint because the sushi delivered was extremely warm and tasted completely off. I could not eat it.';
+    imageName = 'sushi_bug.png';
+  } else if (type === 'suspicious') {
+    customerName = 'Alice Smith';
+    customerId = 'CUST-1001'; // Alice has 2 previous claims (+20 pts)
+    orderId = 'ORD-1004'; // Alice's order delivered 5 hours ago (+20 pts)
+    restaurantName = 'Pizza Palace';
+    complaintText = 'If I do not get a full refund immediately I will contact my lawyer and sue this platform. Extremely suspicious quality!';
+    imageName = 'midjourney_pizza_ref.png'; // AI generated filename trigger (+25 pts)
+  }
+  
+  // 1. Populate form fields
+  document.getElementById("input-customer-name").value = customerName;
+  document.getElementById("input-customer-id").value = customerId;
+  document.getElementById("input-order-id").value = orderId;
+  document.getElementById("input-restaurant-name").value = restaurantName;
+  document.getElementById("input-complaint-text").value = complaintText;
+  
+  // 2. Fetch and load the corresponding image
+  try {
+    // If we're loading the suspicious claim, we want to fetch pizza_plastic.png, but name the File object "midjourney_pizza_ref.png" to trigger the AI Filename check!
+    const fetchImageName = type === 'suspicious' ? 'pizza_plastic.png' : imageName;
+    const response = await fetch(`test_images/${fetchImageName}`);
+    if (!response.ok) throw new Error("Sample image not found");
+    
+    const blob = await response.blob();
+    const file = new File([blob], imageName, { type: 'image/png' });
+    
+    // Assign to global file selection variable
+    selectedFile = file;
+    
+    // Update the Drag & Drop Preview UI
+    const fileInput = document.getElementById("input-file");
+    const dropZoneContent = document.querySelector("#drop-zone .drop-zone-content");
+    const previewContainer = document.getElementById("file-preview-container");
+    const previewImg = document.getElementById("file-preview-img");
+    const previewName = document.getElementById("file-preview-name");
+    const previewSize = document.getElementById("file-preview-size");
+    
+    previewName.textContent = file.name;
+    previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewContainer.style.display = "flex";
+      dropZoneContent.style.display = "none";
+    };
+    reader.readAsDataURL(file);
+    
+  } catch (error) {
+    console.error("Error loading demo image:", error);
+    alert(`Could not load demo image: ${error.message}. Please upload an image manually.`);
+  }
+  
+  // Re-render lucide icons in case anything dynamic changed
+  lucide.createIcons();
+}
+
+// Bind fillDemoClaim to window so it's globally accessible from HTML onclick attributes
+window.fillDemoClaim = fillDemoClaim;

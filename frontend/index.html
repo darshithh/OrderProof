@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,20 +7,17 @@
   <!-- Google Fonts: Inter and Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
   <!-- Lucide Icons for premium visual icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-
 <body>
 
   <!-- App Container -->
   <div class="app-container">
-
+    
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="logo-container">
@@ -30,7 +26,7 @@
         </div>
         <span class="logo-text">Order<span class="accent-text">Proof</span></span>
       </div>
-
+      
       <nav class="nav-menu">
         <a href="#" class="nav-item active" data-target="home">
           <i data-lucide="layout-dashboard"></i>
@@ -49,7 +45,7 @@
           <span>Admin Panel</span>
         </a>
       </nav>
-
+      
       <div class="sidebar-footer">
         <div class="status-indicator">
           <span class="pulse-dot"></span>
@@ -60,13 +56,12 @@
 
     <!-- Main Content Area -->
     <main class="main-content">
-
+      
       <!-- Top Header -->
       <header class="top-header">
         <div class="header-info">
           <h1 id="page-title">Dashboard Overview</h1>
-          <p id="page-subtitle" class="subtitle">System health, performance metrics, and pre-seeded testing environment.
-          </p>
+          <p id="page-subtitle" class="subtitle">System health, performance metrics, and pre-seeded testing environment.</p>
         </div>
         <div class="system-time">
           <i data-lucide="clock"></i>
@@ -76,6 +71,33 @@
 
       <!-- VIEW 1: HOME / OVERVIEW -->
       <section id="view-home" class="view-section active">
+        
+        <!-- Strong Hero Section -->
+        <div class="hero-section glass-card">
+          <div class="hero-content">
+            <div class="hero-badge">
+              <i data-lucide="shield-check"></i>
+              <span>Advanced Fraud Prevention Engine</span>
+            </div>
+            <h1 class="hero-title">Detect suspicious food refund claims before money is refunded</h1>
+            <p class="hero-subtitle">OrderProof checks image metadata, duplicate evidence, complaint timing, customer history, and suspicious descriptions to help food delivery platforms reduce fake refund abuse.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary btn-hero" onclick="appRouter('upload')">
+                <i data-lucide="play"></i>
+                <span>Try Demo</span>
+              </button>
+              <button class="btn btn-secondary btn-hero" onclick="appRouter('admin')">
+                <i data-lucide="shield-alert"></i>
+                <span>View Admin Panel</span>
+              </button>
+              <button class="btn btn-secondary btn-hero" id="btn-see-logic">
+                <i data-lucide="help-circle"></i>
+                <span>See Scoring Logic</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Dashboard Stats Grid -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -117,7 +139,7 @@
         </div>
 
         <!-- Info Panels Grid -->
-        <div class="info-grid">
+        <div class="info-grid" id="scoring-logic-card">
           <!-- Left Panel: Explanation -->
           <div class="card glass-card span-8">
             <div class="card-header">
@@ -126,35 +148,29 @@
             </div>
             <div class="card-body">
               <p class="desc-text">
-                OrderProof operates at the interface between customer service and risk management. When a customer
-                requests a refund citing unhygienic substances in their food (such as hair, insects, lizard, plastic),
-                this system automatically analyses the submission to compute a <strong>multi-layered risk
-                  score</strong>.
+                OrderProof operates at the interface between customer service and risk management. When a customer requests a refund citing unhygienic substances in their food (such as hair, insects, lizard, plastic), this system automatically analyses the submission to compute a <strong>multi-layered risk score</strong>.
               </p>
-
+              
               <div class="workflow-steps">
                 <div class="step-item">
                   <div class="step-num">1</div>
                   <div class="step-content">
                     <h4>Image & Filename Forensic Analysis</h4>
-                    <p>Scans file names for AI generation signatures and verifies JPEG EXIF camera metadata to detect
-                      internet downloads or mockups.</p>
+                    <p>Scans file names for AI generation signatures and verifies JPEG EXIF camera metadata to detect internet downloads or mockups.</p>
                   </div>
                 </div>
                 <div class="step-item">
                   <div class="step-num">2</div>
                   <div class="step-content">
                     <h4>Perceptual Hash & Duplicate Detection</h4>
-                    <p>Hashes image content (SHA-256) to ensure the exact same image hasn't been recycled from an old
-                      customer complaint.</p>
+                    <p>Hashes image content (SHA-256 and dHash) to ensure the exact same or visually similar image hasn't been recycled from an old complaint.</p>
                   </div>
                 </div>
                 <div class="step-item">
                   <div class="step-num">3</div>
                   <div class="step-content">
                     <h4>Customer & Restaurant Cross-Referencing</h4>
-                    <p>Looks up order delivery times (detecting late complaints) and analyzes historical reports for
-                      claim repetition or restaurant corroboration.</p>
+                    <p>Looks up order delivery times (detecting late complaints) and analyzes historical reports for claim repetition or restaurant corroboration.</p>
                   </div>
                 </div>
               </div>
@@ -169,7 +185,7 @@
             </div>
             <div class="card-body">
               <p class="small-text">Our SQLite database is seeded with orders that trigger different behaviors:</p>
-
+              
               <ul class="sandbox-list">
                 <li>
                   <div class="sandbox-order">ORD-1001</div>
@@ -193,29 +209,144 @@
                   </div>
                 </li>
               </ul>
-
+              
               <div class="sandbox-tip">
                 <i data-lucide="lightbulb" class="tip-icon"></i>
-                <p><strong>Try this:</strong> Log a complaint for <code>Alice Smith</code> with keyword "hair" at
-                  <code>Burger House</code>. The system will mitigate risk due to historical restaurant issues!</p>
+                <p><strong>Try this:</strong> Log a complaint for <code>Alice Smith</code> with keyword "hair" at <code>Burger House</code>. The system will mitigate risk due to historical restaurant issues!</p>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Why OrderProof Matters Section -->
+        <div class="business-value-section">
+          <h2 class="section-title">Why OrderProof Matters</h2>
+          <p class="section-subtitle">Operational and financial benefits of a multi-signal risk engine.</p>
+          <div class="value-grid">
+            <div class="value-card glass-card">
+              <div class="value-icon text-danger">
+                <i data-lucide="trending-down"></i>
+              </div>
+              <h3>Reduces Fake Refunds</h3>
+              <p>Stops automated or coordinated refund abuse instantly by flagging recycled images and AI-generated proof before the payout is triggered.</p>
+            </div>
+            
+            <div class="value-card glass-card">
+              <div class="value-icon text-success">
+                <i data-lucide="users"></i>
+              </div>
+              <h3>Protects Genuine Customers</h3>
+              <p>Maintains a frictionless, automated refund experience for honest accounts while ensuring suspicious claims receive appropriate scrutiny.</p>
+            </div>
+            
+            <div class="value-card glass-card">
+              <div class="value-icon text-warning">
+                <i data-lucide="sliders"></i>
+              </div>
+              <h3>Helps Support Teams Prioritize</h3>
+              <p>Filters out clear-cut fraud cases automatically, allowing support agents to focus their manual investigation efforts on complex borderline cases.</p>
+            </div>
+            
+            <div class="value-card glass-card">
+              <div class="value-icon text-info">
+                <i data-lucide="file-check-2"></i>
+              </div>
+              <h3>Gives Evidence-Backed Decisions</h3>
+              <p>Provides deep cryptographic and metadata proof for every single decision, ensuring compliance, auditability, and transparent customer relations.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tech Stack Section -->
+        <div class="tech-stack-section">
+          <h2 class="section-title">OrderProof Tech Stack</h2>
+          <p class="section-subtitle">A modern, secure, and highly performant architecture.</p>
+          <div class="tech-grid">
+            <div class="tech-card glass-card">
+              <i data-lucide="zap" class="tech-icon text-warning"></i>
+              <div class="tech-info">
+                <h4>FastAPI Backend</h4>
+                <p>High-performance Python web API with asynchronous handling and automatic documentation.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="database" class="tech-icon text-info"></i>
+              <div class="tech-info">
+                <h4>SQLite Database</h4>
+                <p>Lightweight, fast, relational SQL store utilizing SQLAlchemy ORM for clean transaction logging.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="code-2" class="tech-icon text-primary"></i>
+              <div class="tech-info">
+                <h4>Vanilla JavaScript SPA</h4>
+                <p>Reactive Single Page Application logic handling real-time routing, drag-drop, and dynamic gauge rendering.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="camera" class="tech-icon text-success"></i>
+              <div class="tech-info">
+                <h4>EXIF Forensic Analysis</h4>
+                <p>Extracts JPEG camera metadata to verify photo source and detect screenshots or web downloads.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="fingerprint" class="tech-icon text-danger"></i>
+              <div class="tech-info">
+                <h4>SHA-256 Cryptographic Hash</h4>
+                <p>Computes unique file signatures to enable exact duplicate detection across the historical database.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="eye" class="tech-icon text-warning"></i>
+              <div class="tech-info">
+                <h4>Image Risk Scoring</h4>
+                <p>Performs aspect ratio checks, low-resolution warnings, AI filename screening, and dHash comparisons.</p>
+              </div>
+            </div>
+            <div class="tech-card glass-card">
+              <i data-lucide="server" class="tech-icon text-success"></i>
+              <div class="tech-info">
+                <h4>Render Deployment</h4>
+                <p>Production-ready, highly reliable cloud container hosting with continuous integration and SSL security.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <!-- VIEW 2: SUBMIT COMPLAINT FORM -->
       <section id="view-upload" class="view-section">
         <div class="form-container-grid">
-
+          
           <!-- Upload Form Card -->
           <div class="card glass-card form-card">
             <div class="card-header">
               <h2>File a Refund Complaint</h2>
               <p class="subtitle">Submit details of the food contamination issue you faced.</p>
+              
+              <!-- Premium Scenario Demo Buttons -->
+              <div class="demo-buttons-container">
+                <span class="demo-label">Interactive Quick Demos:</span>
+                <div class="demo-buttons-group">
+                  <button type="button" class="btn-demo btn-demo-genuine" onclick="fillDemoClaim('genuine')">
+                    <i data-lucide="check-circle-2"></i>
+                    <span>Test Genuine Claim</span>
+                  </button>
+                  <button type="button" class="btn-demo btn-demo-late" onclick="fillDemoClaim('late')">
+                    <i data-lucide="clock"></i>
+                    <span>Test Late Complaint</span>
+                  </button>
+                  <button type="button" class="btn-demo btn-demo-suspicious" onclick="fillDemoClaim('suspicious')">
+                    <i data-lucide="alert-triangle"></i>
+                    <span>Test Suspicious Claim</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <form id="complaint-form" enctype="multipart/form-data">
-
+              
               <!-- Quick Select Order Trigger -->
               <div class="form-group">
                 <label for="order-select">Quick-Fill from Sandbox Order (Optional)</label>
@@ -223,16 +354,15 @@
                   <option value="">-- Choose sandbox order to auto-populate --</option>
                 </select>
               </div>
-
+              
               <hr class="form-divider">
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="input-customer-name">Customer Name <span class="required">*</span></label>
-                  <input type="text" id="input-customer-name" required placeholder="e.g. Alice Smith"
-                    class="form-control">
+                  <input type="text" id="input-customer-name" required placeholder="e.g. Alice Smith" class="form-control">
                 </div>
-
+                
                 <div class="form-group">
                   <label for="input-customer-id">Customer ID <span class="required">*</span></label>
                   <input type="text" id="input-customer-id" readonly placeholder="e.g. CUST-1001" class="form-control">
@@ -247,16 +377,13 @@
 
                 <div class="form-group">
                   <label for="input-restaurant-name">Restaurant Name <span class="required">*</span></label>
-                  <input type="text" id="input-restaurant-name" required placeholder="e.g. Burger House"
-                    class="form-control">
+                  <input type="text" id="input-restaurant-name" required placeholder="e.g. Burger House" class="form-control">
                 </div>
               </div>
 
               <div class="form-group">
                 <label for="input-complaint-text">Description of the issue <span class="required">*</span></label>
-                <textarea id="input-complaint-text" required rows="4"
-                  placeholder="Describe the hygiene issue (e.g. 'Found a black hair baked into my burger bun.')"
-                  class="form-control"></textarea>
+                <textarea id="input-complaint-text" required rows="4" placeholder="Describe the hygiene issue (e.g. 'Found a black hair baked into my burger bun.')" class="form-control"></textarea>
               </div>
 
               <!-- Premium Drag and Drop File Upload -->
@@ -293,21 +420,33 @@
 
       <!-- VIEW 3: COMPLAINT ANALYSIS RESULTS -->
       <section id="view-result" class="view-section">
-        <div class="result-grid">
+        
+        <!-- Empty Placeholder State -->
+        <div id="result-empty-state" class="card glass-card empty-state-view">
+          <div class="empty-state-icon-wrapper">
+            <i data-lucide="activity"></i>
+          </div>
+          <h2>No analysis yet</h2>
+          <p class="desc-text">Submit a complaint to generate a risk score.</p>
+          <button class="btn btn-primary" onclick="appRouter('upload')">
+            <i data-lucide="file-up"></i>
+            <span>File a Complaint</span>
+          </button>
+        </div>
 
+        <!-- Result Content (Hidden by default until a complaint is submitted) -->
+        <div class="result-grid" id="result-grid-content" style="display: none;">
+          
           <!-- Risk Gauge Card -->
           <div class="card glass-card score-card">
             <h2>Analysis Summary</h2>
             <p class="subtitle">Real-time risk scoring output</p>
-
+            
             <div class="gauge-wrapper">
               <!-- Animated SVG circle gauge -->
               <svg class="progress-ring" width="220" height="220">
-                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="transparent"
-                  r="90" cx="110" cy="110" />
-                <circle id="progress-ring-bar" class="progress-ring-bar" stroke="var(--accent-color, #10b981)"
-                  stroke-width="12" stroke-dasharray="565.48" stroke-dashoffset="565.48" fill="transparent" r="90"
-                  cx="110" cy="110" />
+                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.05)" stroke-width="12" fill="transparent" r="90" cx="110" cy="110"/>
+                <circle id="progress-ring-bar" class="progress-ring-bar" stroke="var(--accent-color, #10b981)" stroke-width="12" stroke-dasharray="565.48" stroke-dashoffset="565.48" fill="transparent" r="90" cx="110" cy="110"/>
               </svg>
               <div class="gauge-center">
                 <span id="result-score-val" class="score-number">0</span>
@@ -317,8 +456,7 @@
 
             <div class="decision-box" id="result-decision-container">
               <div class="decision-badge" id="result-decision-badge">Likely Genuine</div>
-              <p class="decision-explanation" id="result-decision-text">This complaint has a low risk profile and is
-                pre-approved for automatic refund processing.</p>
+              <p class="decision-explanation" id="result-decision-text">This complaint has a low risk profile and is pre-approved for automatic refund processing.</p>
             </div>
 
             <div class="result-meta-list">
@@ -357,6 +495,7 @@
             <!-- Image Diagnostics Block -->
             <div class="diagnostics-block">
               <h3>Image Forensic Details</h3>
+              
               <div class="diagnostics-grid">
                 <div class="diagnostic-item">
                   <span class="diag-label">Dimensions</span>
@@ -371,10 +510,26 @@
                   <strong id="diag-exif">No metadata</strong>
                 </div>
                 <div class="diagnostic-item">
-                  <span class="diag-label">File Hash (SHA-256)</span>
-                  <strong id="diag-hash" class="hash-text">000000...0000</strong>
+                  <span class="diag-label">Perceptual Hash (dHash)</span>
+                  <strong id="diag-dhash" class="hash-text">0000000000000000</strong>
+                </div>
+                <div class="diagnostic-item span-2">
+                  <span class="diag-label">Exact Hash Match (SHA-256)</span>
+                  <strong id="diag-sha256" class="hash-text">0000000000000000000000000000000000000000000000000000000000000000</strong>
                 </div>
               </div>
+              
+              <div class="duplicate-status-badges" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <div class="diag-status-badge" id="diag-exact-match-status">
+                  <i data-lucide="check-circle-2"></i>
+                  <span>Exact Hash Match: None</span>
+                </div>
+                <div class="diag-status-badge" id="diag-visual-match-status">
+                  <i data-lucide="check-circle-2"></i>
+                  <span>Visual Similarity: None</span>
+                </div>
+              </div>
+              
               <div class="diagnostic-image-view">
                 <span class="diag-label">Uploaded Image Evidence:</span>
                 <div class="img-frame">
@@ -389,7 +544,7 @@
 
       <!-- VIEW 4: ADMIN DASHBOARD -->
       <section id="view-admin" class="view-section">
-
+        
         <!-- Stats Summary Mini Grid -->
         <div class="admin-stats-row">
           <div class="mini-stat-card">
@@ -410,8 +565,7 @@
         <div class="admin-toolbar">
           <div class="search-box-wrapper">
             <i data-lucide="search" class="search-icon"></i>
-            <input type="text" id="admin-search-input" placeholder="Search by customer, restaurant, order..."
-              class="form-control search-input">
+            <input type="text" id="admin-search-input" placeholder="Search by customer, restaurant, order..." class="form-control search-input">
           </div>
           <div class="filter-controls">
             <select id="admin-filter-decision" class="form-control filter-select">
@@ -450,7 +604,7 @@
               </tbody>
             </table>
           </div>
-
+          
           <div id="no-complaints-msg" class="empty-state-view" style="display: none;">
             <i data-lucide="inbox" class="empty-icon"></i>
             <h3>No Complaints Found</h3>
@@ -481,5 +635,4 @@
   <!-- JS Code -->
   <script src="app.js"></script>
 </body>
-
 </html>
