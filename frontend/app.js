@@ -717,7 +717,7 @@ function openDetailsModal(complaintId) {
   });
 
   const meta = c.analysis_details.metadata || {};
-  
+
   // Show hashes
   const dup = c.analysis_details.duplicate_detection || {};
   const displayDhash = dup.dhash || "None";
@@ -810,7 +810,7 @@ function initModalClose() {
 // --- Interactive Demo Auto-fill Helper ---
 async function fillDemoClaim(type) {
   let customerName, customerId, orderId, restaurantName, complaintText, imageName;
-  
+
   if (type === 'genuine') {
     customerName = 'Alice Smith';
     customerId = 'CUST-1001';
@@ -833,27 +833,27 @@ async function fillDemoClaim(type) {
     complaintText = 'If I do not get a full refund immediately I will contact my lawyer and sue this platform. Extremely suspicious quality!';
     imageName = 'midjourney_pizza_ref.png'; // AI generated filename trigger (+25 pts)
   }
-  
+
   // 1. Populate form fields
   document.getElementById("input-customer-name").value = customerName;
   document.getElementById("input-customer-id").value = customerId;
   document.getElementById("input-order-id").value = orderId;
   document.getElementById("input-restaurant-name").value = restaurantName;
   document.getElementById("input-complaint-text").value = complaintText;
-  
+
   // 2. Fetch and load the corresponding image
   try {
     // If we're loading the suspicious claim, we want to fetch pizza_plastic.png, but name the File object "midjourney_pizza_ref.png" to trigger the AI Filename check!
     const fetchImageName = type === 'suspicious' ? 'pizza_plastic.png' : imageName;
     const response = await fetch(`test_images/${fetchImageName}`);
     if (!response.ok) throw new Error("Sample image not found");
-    
+
     const blob = await response.blob();
     const file = new File([blob], imageName, { type: 'image/png' });
-    
+
     // Assign to global file selection variable
     selectedFile = file;
-    
+
     // Update the Drag & Drop Preview UI
     const fileInput = document.getElementById("input-file");
     const dropZoneContent = document.querySelector("#drop-zone .drop-zone-content");
@@ -861,10 +861,10 @@ async function fillDemoClaim(type) {
     const previewImg = document.getElementById("file-preview-img");
     const previewName = document.getElementById("file-preview-name");
     const previewSize = document.getElementById("file-preview-size");
-    
+
     previewName.textContent = file.name;
     previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       previewImg.src = e.target.result;
@@ -872,12 +872,12 @@ async function fillDemoClaim(type) {
       dropZoneContent.style.display = "none";
     };
     reader.readAsDataURL(file);
-    
+
   } catch (error) {
     console.error("Error loading demo image:", error);
     alert(`Could not load demo image: ${error.message}. Please upload an image manually.`);
   }
-  
+
   // Re-render lucide icons in case anything dynamic changed
   lucide.createIcons();
 }

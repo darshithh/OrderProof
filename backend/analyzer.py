@@ -366,18 +366,18 @@ def analyze_complaint(
         })
 
     # Clamp the final risk score between 0 and 100
-    final_score = max(0, min(100, total_score))
+    risk_score = max(0, min(total_score, 100))
     
     # Classify decision based on score thresholds
-    if final_score <= 30:
+    if risk_score <= 30:
         decision = "Likely Genuine"
-    elif final_score <= 70:
+    elif risk_score <= 70:
         decision = "Manual Review Needed"
     else:
         decision = "Suspicious"
 
     return {
-        "risk_score": final_score,
+        "risk_score": risk_score,
         "decision": decision,
         "rules_triggered": rules_triggered,
         "image_metadata": image_metadata,
