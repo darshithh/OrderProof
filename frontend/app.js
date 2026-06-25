@@ -12,8 +12,8 @@ let latestResult = null;
 // API Base URL (default is empty since we serve from the same FastAPI instance)
 const API_BASE = "";
 
-// Circular Progress Bar Constant (r=90, Circumference = 2 * pi * r = 565.48)
-const PROGRESS_CIRCUMFERENCE = 565.48;
+// Circular Progress Bar Constant (r=80, Circumference = 2 * pi * r = 502.65)
+const PROGRESS_CIRCUMFERENCE = 502.65;
 
 // --- Initialize App ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -412,7 +412,7 @@ function renderAnalysisResult(complaint) {
   }
   decisionBadge.textContent = decisionLabel;
 
-  if (score <= 30) {
+  if (score <= 39) {
     root.style.setProperty("--accent-color", "var(--success)");
     decisionBox.style.background = "var(--success-bg)";
     decisionBox.style.border = "1px solid var(--success-border)";
