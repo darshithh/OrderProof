@@ -4,7 +4,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Define base directory of the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_DIR = os.path.join(BASE_DIR, "database")
+if os.environ.get("VERCEL"):
+    DB_DIR = "/tmp"
+else:
+    DB_DIR = os.path.join(BASE_DIR, "database")
 
 # Ensure the database directory exists
 os.makedirs(DB_DIR, exist_ok=True)
