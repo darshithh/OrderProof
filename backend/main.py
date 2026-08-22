@@ -232,7 +232,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     )
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
     """Health check endpoint to verify backend process and database connectivity."""
     try:
