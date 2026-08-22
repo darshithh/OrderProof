@@ -396,6 +396,7 @@ function clearSandboxFile() {
 // --- Drag & Drop Image Handler ---
 function initDragAndDrop() {
   const dropZone = document.getElementById("drop-zone");
+  if (!dropZone) return;
   const fileInput = document.getElementById("input-file");
   const dropZoneContent = dropZone.querySelector(".drop-zone-content");
   const previewContainer = document.getElementById("file-preview-container");
@@ -1165,14 +1166,14 @@ async function fillDemoClaim(type) {
     const previewName = document.getElementById("file-preview-name");
     const previewSize = document.getElementById("file-preview-size");
 
-    previewName.textContent = file.name;
-    previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+    if (previewName) previewName.textContent = file.name;
+    if (previewSize) previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      previewImg.src = e.target.result;
-      previewContainer.style.display = "flex";
-      dropZoneContent.style.display = "none";
+      if (previewImg) previewImg.src = e.target.result;
+      if (previewContainer) previewContainer.style.display = "flex";
+      if (dropZoneContent) dropZoneContent.style.display = "none";
     };
     reader.readAsDataURL(file);
 
