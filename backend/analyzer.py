@@ -5,7 +5,7 @@ import datetime
 # pyrefly: ignore [missing-import]
 from PIL import Image
 from sqlalchemy.orm import Session
-from backend import crud
+from backend import models, crud
 
 # Define base directory of the project to locate files
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,6 +60,31 @@ SUSPICIOUS_TEXT_KEYWORDS = ["refund", "money back", "compensation", "sue", "lawy
 # Issue categories to match restaurant history
 ISSUE_KEYWORDS = ["hair", "insect", "bug", "lizard", "plastic", "glass", "hygiene", "unhygienic", "roach", "fly"]
 
+# Centralized Risk Engine Configuration
+RISK_WEIGHTS = {
+    "AI_FILENAME_CHECK": 25,
+    "EXIF_METADATA_MISSING": 15,
+    "RESOLUTION_TOO_LOW": 5,
+    "EXACT_DUPLICATE": 30,
+    "VISUAL_DUPLICATE": 30,
+    "COMPLAINT_DELAYED": 20,
+    "ORDER_NOT_FOUND": 15,
+    "SUSPICIOUS_TEXT": 10,
+    "EVIDENCE_UPLOADED": 10,
+    "RESTAURANT_COHERENCE_MITIGATION": 15,
+    # Customer Claim History Check Sub-Weights
+    "HISTORY_TOTAL_GE_3": 15,
+    "HISTORY_TOTAL_EQ_2": 10,
+    "HISTORY_RECENT_GE_2": 15,
+    "HISTORY_SUSPICIOUS_GE_1": 20,
+    "HISTORY_SIMILAR_GE_1": 10
+}
+
+RISK_THRESHOLDS = {
+    "LOW_MAX": 29,
+    "MEDIUM_MAX": 59
+}
+
 def analyze_complaint(
     db: Session,
     filename: str,
@@ -68,7 +93,9 @@ def analyze_complaint(
     restaurant_name: str,
     complaint_text: str,
     order_id: str,
-    customer_id: str
+    customer_id: str,
+    category: str = "Other",
+    evidence_source: str = "upload"
 ) -> dict:
     """
     Main analysis engine. Combines multiple rules to calculate a risk score (0-100).
@@ -88,13 +115,13 @@ def analyze_complaint(
     filename_lower = filename.lower()
     ai_found = [kw for kw in AI_KEYWORDS if kw in filename_lower]
     if ai_found:
-        score_added = 25
+        score_added = RISK_WEIGHTS["AI_FILENAME_CHECK"]
         total_score += score_added
         rules_triggered.append({
             "rule": "AI Filename Check",
             "passed": False,
             "score_added": score_added,
-            "message": f"Filename contains AI generation tool signature ({', '.join(ai_found)})."
+            "message": f"Filename contains AI generation tool signature ({', '.join(ai_found)}). This indicates a high probability of AI generation."
         })
     else:
         rules_triggered.append({
@@ -132,13 +159,13 @@ def analyze_complaint(
     }
 
     if not has_exif:
-        score_added = 15
+        score_added = RISK_WEIGHTS["EXIF_METADATA_MISSING"]
         total_score += score_added
         rules_triggered.append({
             "rule": "EXIF Metadata Check",
             "passed": False,
             "score_added": score_added,
-            "message": "No EXIF camera metadata found. Image might be a screenshot or edited."
+            "message": "No EXIF camera metadata found. Image lacks device-specific metadata, which reduces provenance confidence."
         })
     else:
         rules_triggered.append({
@@ -152,13 +179,13 @@ def analyze_complaint(
     # Rule 3: Image Size / Dimensions Check (+5 points if suspiciously low)
     # ----------------------------------------------------
     if img_width > 0 and (img_width < 400 or img_height < 400):
-        score_added = 5
+        score_added = RISK_WEIGHTS["RESOLUTION_TOO_LOW"]
         total_score += score_added
         rules_triggered.append({
             "rule": "Low Resolution Check",
             "passed": False,
             "score_added": score_added,
-            "message": f"Image resolution is very low ({img_width}x{img_height}), common for web thumbnails."
+            "message": f"Image resolution is very low ({img_width}x{img_height}). This is common for cropped screenshots or web thumbnails."
         })
     else:
         rules_triggered.append({
@@ -222,22 +249,22 @@ def analyze_complaint(
     }
     
     if dup_details["exact_match"]:
-        score_added = 30
+        score_added = RISK_WEIGHTS["EXACT_DUPLICATE"]
         total_score += score_added
         rules_triggered.append({
             "rule": "Exact Duplicate Detection",
             "passed": False,
             "score_added": score_added,
-            "message": f"Exact duplicate image detected (SHA-256 match) with Complaint #{dup_details['exact_match_id']}."
+            "message": f"Exact duplicate image detected (SHA-256 match) with Complaint #{dup_details['exact_match_id']}. This indicates evidence reuse."
         })
     elif dup_details["visual_match"]:
-        score_added = 30
+        score_added = RISK_WEIGHTS["VISUAL_DUPLICATE"]
         total_score += score_added
         rules_triggered.append({
             "rule": "Visual Similarity Match (Perceptual Hash)",
             "passed": False,
             "score_added": score_added,
-            "message": f"Visually similar image detected (perceptual hash match) with Complaint #{dup_details['visual_match_id']} (Hamming distance: {dup_details['hamming_distance']}/64)."
+            "message": f"Visually similar image detected (perceptual hash match) with Complaint #{dup_details['visual_match_id']} (Hamming distance: {dup_details['hamming_distance']}/64). This indicates visual reuse."
         })
     else:
         rules_triggered.append({
@@ -256,13 +283,13 @@ def analyze_complaint(
         minutes_elapsed= elapsed_time.total_seconds() / 60.0
         
         if minutes_elapsed > 30:
-            score_added = 20
+            score_added = RISK_WEIGHTS["COMPLAINT_DELAYED"]
             total_score += score_added
             rules_triggered.append({
                 "rule": "Complaint Timing Check",
                 "passed": False,
                 "score_added": score_added,
-                "message": f"Complaint uploaded too late: {minutes_elapsed:.1f} minutes after order delivery (30-minute limit)."
+                "message": f"Complaint uploaded too late: {minutes_elapsed:.1f} minutes after order delivery (30-minute limit). Delayed reporting increases risk."
             })
         else:
             rules_triggered.append({
@@ -273,35 +300,69 @@ def analyze_complaint(
             })
     else:
         # Order ID not found
-        score_added = 15
+        score_added = RISK_WEIGHTS["ORDER_NOT_FOUND"]
         total_score += score_added
         rules_triggered.append({
             "rule": "Order Validation Check",
             "passed": False,
             "score_added": score_added,
-            "message": "Order ID not found in database. Suspicious order reference."
+            "message": "Order ID not found in database. The submitted order ID does not exist in store records."
         })
 
     # ----------------------------------------------------
-    # Rule 6: Customer Complaint History Check (+20 points)
+    # Rule 6: Customer Complaint History Check
     # ----------------------------------------------------
-    prev_claims_count = crud.get_customer_complaint_count(db, customer_id)
-    # If the user has 2 or more previous claims, this submission makes it 3+
-    if prev_claims_count >= 2:
-        score_added = 20
+    # Retrieve actual historical claims from database
+    historical_claims = db.query(models.Complaint).filter(models.Complaint.customer_id == customer_id).all()
+    total_claims = len(historical_claims)
+    
+    # Recent claims in last 7 days
+    now_utc = datetime.datetime.utcnow()
+    recent_claims = len([c for c in historical_claims if (now_utc - c.created_at).days <= 7])
+    
+    # Previous suspicious claims
+    suspicious_claims = len([c for c in historical_claims if c.risk_level == "HIGH" or c.decision == "Suspicious"])
+    
+    # Similar claims in same category
+    similar_claims = len([c for c in historical_claims if c.category == category])
+    
+    history_score = 0
+    history_messages = []
+    
+    if total_claims >= 3:
+        history_score += RISK_WEIGHTS["HISTORY_TOTAL_GE_3"]
+        history_messages.append(f"high historical volume ({total_claims} claims)")
+    elif total_claims >= 2:
+        history_score += RISK_WEIGHTS["HISTORY_TOTAL_EQ_2"]
+        history_messages.append(f"moderate historical volume ({total_claims} claims)")
+        
+    if recent_claims >= 2:
+        history_score += RISK_WEIGHTS["HISTORY_RECENT_GE_2"]
+        history_messages.append(f"high recent claim frequency ({recent_claims} in last 7 days)")
+        
+    if suspicious_claims >= 1:
+        history_score += RISK_WEIGHTS["HISTORY_SUSPICIOUS_GE_1"]
+        history_messages.append(f"previous suspicious claims ({suspicious_claims})")
+        
+    if similar_claims >= 1:
+        history_score += RISK_WEIGHTS["HISTORY_SIMILAR_GE_1"]
+        history_messages.append(f"previous similar claims in category '{category}'")
+
+    if history_score > 0:
+        score_added = history_score
         total_score += score_added
         rules_triggered.append({
-            "rule": "Customer Claims History Check",
+            "rule": "Customer Claim History Analysis",
             "passed": False,
             "score_added": score_added,
-            "message": f"Customer '{customer_name}' has high claim volume ({prev_claims_count} previous complaints)."
+            "message": f"Historical risk triggers detected: {', '.join(history_messages)}."
         })
     else:
         rules_triggered.append({
-            "rule": "Customer Claims History Check",
+            "rule": "Customer Claim History Analysis",
             "passed": True,
             "score_added": 0,
-            "message": f"Customer has clean claim history ({prev_claims_count} previous complaints)."
+            "message": "Customer has a low-risk claim history profile."
         })
 
     # ----------------------------------------------------
@@ -321,13 +382,13 @@ def analyze_complaint(
         )
         # If the restaurant has 2 or more complaints matching the same issue, it's highly likely a real systemic issue.
         if restaurant_similar_count >= 2:
-            score_mitigated = 15
+            score_mitigated = RISK_WEIGHTS["RESTAURANT_COHERENCE_MITIGATION"]
             total_score -= score_mitigated
             rules_triggered.append({
                 "rule": "Restaurant Coherence Check",
                 "passed": True,  # Mitigating rule passing is positive
                 "score_added": -score_mitigated,
-                "message": f"Corroborating record: {restaurant_similar_count} complaints for '{restaurant_name}' also report issues containing '{found_issue_kw}'."
+                "message": f"Corroborating record: {restaurant_similar_count} complaints for '{restaurant_name}' also report issues containing '{found_issue_kw}'. Systemic restaurant issues mitigate individual user risk."
             })
         else:
             rules_triggered.append({
@@ -349,13 +410,13 @@ def analyze_complaint(
     # ----------------------------------------------------
     flagged_words = [kw for kw in SUSPICIOUS_TEXT_KEYWORDS if kw in text_lower]
     if flagged_words:
-        score_added = 10
+        score_added = RISK_WEIGHTS["SUSPICIOUS_TEXT"]
         total_score += score_added
         rules_triggered.append({
             "rule": "Suspicious Text Check",
             "passed": False,
             "score_added": score_added,
-            "message": f"Text contains high-pressure refund bait words: {', '.join(flagged_words)}."
+            "message": f"Text contains high-pressure refund bait words: {', '.join(flagged_words)}. High-pressure demands increase suspicion."
         })
     else:
         rules_triggered.append({
@@ -365,23 +426,82 @@ def analyze_complaint(
             "message": "Complaint description uses standard customer language."
         })
 
+    # ----------------------------------------------------
+    # Rule 9: Evidence Provenance Check (+10 points if uploaded)
+    # ----------------------------------------------------
+    if evidence_source == "upload":
+        score_added = RISK_WEIGHTS["EVIDENCE_UPLOADED"]
+        total_score += score_added
+        rules_triggered.append({
+            "rule": "Evidence Provenance Check",
+            "passed": False,
+            "score_added": score_added,
+            "message": "Evidence was uploaded from device storage. Uploaded images carry higher risk of editing or recycling."
+        })
+    else:
+        rules_triggered.append({
+            "rule": "Evidence Provenance Check",
+            "passed": True,
+            "score_added": 0,
+            "message": "Evidence was captured in real-time using device camera (provenance verified)."
+        })
+
     # Clamp the final risk score between 0 and 100
     risk_score = max(0, min(total_score, 100))
     
     # Classify decision based on score thresholds
-    if risk_score <= 30:
+    if risk_score <= RISK_THRESHOLDS["LOW_MAX"]:
         decision = "Likely Genuine"
-    elif risk_score <= 70:
+        risk_level = "LOW"
+        recommendation = "NORMAL PROCESSING"
+    elif risk_score <= RISK_THRESHOLDS["MEDIUM_MAX"]:
         decision = "Manual Review Needed"
+        risk_level = "MEDIUM"
+        recommendation = "REVIEW RECOMMENDED"
     else:
         decision = "Suspicious"
+        risk_level = "HIGH"
+        recommendation = "MANUAL REVIEW REQUIRED"
+
+    # Compute risk score category breakdown dynamically
+    breakdown = {
+        "evidence_source": 0,
+        "image_analysis": 0,
+        "duplicate_detection": 0,
+        "customer_history": 0,
+        "suspicious_content": 0
+    }
+    
+    for rule in rules_triggered:
+        name = rule["rule"]
+        val = rule["score_added"]
+        if name == "Evidence Provenance Check":
+            breakdown["evidence_source"] += val
+        elif name in ("AI Filename Check", "EXIF Metadata Check", "Low Resolution Check", "Restaurant Coherence Check"):
+            breakdown["image_analysis"] += val
+        elif name in ("Exact Duplicate Detection", "Visual Similarity Match (Perceptual Hash)"):
+            breakdown["duplicate_detection"] += val
+        elif name in ("Customer Claim History Analysis", "Order Validation Check"):
+            breakdown["customer_history"] += val
+        elif name in ("Suspicious Text Check", "Complaint Timing Check"):
+            breakdown["suspicious_content"] += val
 
     return {
         "risk_score": risk_score,
         "decision": decision,
+        "risk_level": risk_level,
+        "recommendation": recommendation,
+        "evidence_source": evidence_source,
         "rules_triggered": rules_triggered,
         "image_metadata": image_metadata,
         "image_hash": sha256,
         "dhash": uploaded_dhash,
-        "duplicate_detection": dup_details
+        "duplicate_detection": dup_details,
+        "breakdown": breakdown,
+        "customer_history": {
+            "total_claims": total_claims,
+            "recent_claims": recent_claims,
+            "suspicious_claims": suspicious_claims,
+            "similar_claims": similar_claims
+        }
     }

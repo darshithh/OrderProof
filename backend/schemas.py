@@ -26,6 +26,10 @@ class ComplaintResponse(BaseModel):
     image_hash: str
     risk_score: int
     decision: str
+    category: Optional[str] = "Other"
+    risk_level: Optional[str] = None
+    recommendation: Optional[str] = None
+    evidence_source: Optional[str] = "upload"
     analysis_details: Dict[str, Any]
     status: str
     created_at: datetime
@@ -41,6 +45,7 @@ class DashboardStats(BaseModel):
     pending_count: int
     approved_count: int
     rejected_count: int
+    needs_evidence_count: int = 0
     recent_complaints: List[ComplaintResponse]
 
     class Config:

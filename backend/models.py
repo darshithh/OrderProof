@@ -33,6 +33,10 @@ class Complaint(Base):
     image_hash = Column(String, nullable=False, index=True)
     risk_score = Column(Integer, nullable=False)
     decision = Column(String, nullable=False)  # "Likely Genuine", "Manual Review Needed", "Suspicious"
+    category = Column(String, nullable=True, default="Other")
+    risk_level = Column(String, nullable=True)  # "LOW", "MEDIUM", "HIGH"
+    recommendation = Column(String, nullable=True)  # "NORMAL PROCESSING", "REVIEW RECOMMENDED", "MANUAL REVIEW REQUIRED"
+    evidence_source = Column(String, nullable=True, default="upload")  # "camera" or "upload"
     analysis_details = Column(JSON, nullable=False)  # Dictionary containing details of all rules run
     status = Column(String, default="Pending")  # "Pending", "Approved", "Rejected"
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

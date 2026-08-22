@@ -120,3 +120,36 @@ Use the pre-seeded orders dropdown to auto-fill the complaint form and test vari
    - File any complaint with an image.
    - Go to "File Complaint" again and submit the **exact same image file** under any customer/order.
    - **Why this works**: The system hashes the file content. On the second upload, it finds the matching SHA-256 hash (+30 points) and flags it immediately.
+
+---
+
+## System Architecture
+
+```mermaid
+graph TD
+    A[Customer / Frontend SPA] -- "POST /api/complaints" --> B[FastAPI Controller]
+    B -- "Validate File (Size, Extension, MIME, Pillow)" --> C[File Handler]
+    C -- "Save Securely (UUID Filename)" --> D[Upload Storage]
+    B -- "Calculate Hash (SHA-256)" --> E[Risk Analyzer]
+    B -- "Compute Perceptual Hash (dHash)" --> E
+    E -- "Evaluate Weights Rules" --> F[(SQLite Database)]
+    F -- "Load Historic Claims" --> E
+    E -- "Compile Signals & Score Breakdown" --> B
+    B -- "Return Response Payload" --> A
+    
+    G[Reviewer / Admin Panel] -- "GET /api/complaints" --> F
+    G -- "PUT /status (Approve/Reject/Needs Evidence)" --> F
+```
+
+### Why Camera Capture Exists
+Web-based evidence uploads are highly vulnerable to recycling stock images, downloading AI-generated pictures of hair/bugs, or editing images. Native browser camera streaming (WebRTC `getUserMedia`) establishes strong provenance by ensuring the photo is captured in real-time. Uploaded files carry a +10 point penalty under our multi-signal engine.
+
+### Why SHA-256 and Perceptual dHash are Used
+- **SHA-256 Content Hashing**: Compares exact content bytes. Useful for catching identical images shared across different customer accounts.
+- **Difference Hash (dHash)**: Resizes, grayscales, and compares adjacent pixels. Useful for catching visually identical images that have been resized, cropped slightly, or converted to a different format.
+
+### Limitations of the System
+- **Provenance Limit**: Native browser capture requests camera device access, but sophisticated users can use virtual camera drivers (e.g. OBS Virtual Camera) to pipe fake feeds.
+- **Physical Condition**: While camera capture proves an image was taken in real-time, it cannot prove the condition of the food at delivery time (e.g., a customer could place a hair on the item themselves).
+- **Metadata stripping**: Modern web browser uploads naturally strip EXIF data for privacy. Hence, lack of metadata indicates lower trust but is not definitive proof of fraud.
+- **Decision Support**: OrderProof acts as an explainable advisor for claims adjusters; it does not automatically reject customer refunds.

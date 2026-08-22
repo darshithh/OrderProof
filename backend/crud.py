@@ -33,7 +33,8 @@ def get_restaurant_similar_complaints_count(db: Session, restaurant_name: str, k
 
 def create_complaint(db: Session, order_id: str, customer_id: str, customer_name: str, restaurant_name: str, 
                      complaint_text: str, image_path: str, image_hash: str, 
-                     risk_score: int, decision: str, analysis_details: dict):
+                     risk_score: int, decision: str, category: str, risk_level: str,
+                     recommendation: str, evidence_source: str, analysis_details: dict):
     """Create a new complaint record."""
     db_complaint = models.Complaint(
         order_id=order_id,
@@ -45,6 +46,10 @@ def create_complaint(db: Session, order_id: str, customer_id: str, customer_name
         image_hash=image_hash,
         risk_score=risk_score,
         decision=decision,
+        category=category,
+        risk_level=risk_level,
+        recommendation=recommendation,
+        evidence_source=evidence_source,
         analysis_details=analysis_details,
         status="Pending"
     )
@@ -136,12 +141,23 @@ def seed_db(db: Session):
         image_hash="dummy_hash_alice_1",
         risk_score=20,
         decision="Likely Genuine",
+        category="Foreign Object",
+        risk_level="LOW",
+        recommendation="NORMAL PROCESSING",
+        evidence_source="upload",
         status="Approved",
         analysis_details={
             "rules": [
                 {"name": "Filename check", "passed": True, "score_added": 0, "message": "Clear filename"},
                 {"name": "Metadata check", "passed": True, "score_added": 0, "message": "EXIF camera metadata present"}
             ],
+            "breakdown": {
+                "evidence_source": 10,
+                "image_analysis": 0,
+                "duplicate_detection": 0,
+                "customer_history": 10,
+                "suspicious_content": 0
+            },
             "final_score": 20
         },
         created_at=now - datetime.timedelta(days=10)
@@ -157,6 +173,10 @@ def seed_db(db: Session):
         image_hash="dummy_hash_alice_2",
         risk_score=40,
         decision="Manual Review Needed",
+        category="Damaged Food",
+        risk_level="MEDIUM",
+        recommendation="REVIEW RECOMMENDED",
+        evidence_source="upload",
         status="Approved",
         analysis_details={
             "rules": [
@@ -164,6 +184,13 @@ def seed_db(db: Session):
                 {"name": "Metadata check", "passed": False, "score_added": 15, "message": "No EXIF metadata found"},
                 {"name": "Upload delay check", "passed": False, "score_added": 20, "message": "Submitted 28 hours after delivery"}
             ],
+            "breakdown": {
+                "evidence_source": 10,
+                "image_analysis": 15,
+                "duplicate_detection": 0,
+                "customer_history": 15,
+                "suspicious_content": 0
+            },
             "final_score": 40
         },
         created_at=now - datetime.timedelta(days=5)
@@ -181,11 +208,22 @@ def seed_db(db: Session):
         image_hash="dummy_hash_restaurant_1",
         risk_score=15,
         decision="Likely Genuine",
+        category="Foreign Object",
+        risk_level="LOW",
+        recommendation="NORMAL PROCESSING",
+        evidence_source="upload",
         status="Approved",
         analysis_details={
             "rules": [
                 {"name": "Filename check", "passed": True, "score_added": 0, "message": "Clear filename"}
             ],
+            "breakdown": {
+                "evidence_source": 10,
+                "image_analysis": -15,
+                "duplicate_detection": 0,
+                "customer_history": 20,
+                "suspicious_content": 0
+            },
             "final_score": 15
         },
         created_at=now - datetime.timedelta(days=20)
@@ -201,11 +239,22 @@ def seed_db(db: Session):
         image_hash="dummy_hash_restaurant_2",
         risk_score=10,
         decision="Likely Genuine",
+        category="Foreign Object",
+        risk_level="LOW",
+        recommendation="NORMAL PROCESSING",
+        evidence_source="upload",
         status="Approved",
         analysis_details={
             "rules": [
                 {"name": "Filename check", "passed": True, "score_added": 0, "message": "Clear filename"}
             ],
+            "breakdown": {
+                "evidence_source": 10,
+                "image_analysis": 0,
+                "duplicate_detection": 0,
+                "customer_history": 0,
+                "suspicious_content": 0
+            },
             "final_score": 10
         },
         created_at=now - datetime.timedelta(days=18)
