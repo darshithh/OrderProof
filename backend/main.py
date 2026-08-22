@@ -11,7 +11,7 @@ from backend import models, schemas, crud, analyzer
 from backend.database import engine, SessionLocal, get_db
 
 # Create database tables if they do not exist
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 inspector = inspect(engine)
 if inspector.has_table("complaints"):
     columns = [col["name"] for col in inspector.get_columns("complaints")]
@@ -237,7 +237,7 @@ def health_check(db: Session = Depends(get_db)):
     """Health check endpoint to verify backend process and database connectivity."""
     try:
         # Verify database read is operational
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
